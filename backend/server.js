@@ -5,6 +5,7 @@ import connectMongoDB from "./db/connectMongoDB.js";
 import cookieParser from "cookie-parser";
 import router from "./routes/user.routes.js";
 import {v2 as cloudinary} from "cloudinary";
+import postRoutes from "./routes/post.routes.js";
 
 // load environment variables from.env file
 const app = express();
@@ -25,7 +26,8 @@ app.use(cookieParser());
 
 // routes
 app.use("/api/auth", authRoutes);
-app.use("/api/users",router);
+app.use("/api/users",router);   
+app.use("/api/posts",postRoutes);
 
 console.log(process.env.MONGODB_URI);
 
