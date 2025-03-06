@@ -1,11 +1,14 @@
-import express from "express";
 import authRoutes from "./routes/auth.routes.js";
-import dotenv from "dotenv";
-import connectMongoDB from "./db/connectMongoDB.js";
-import cookieParser from "cookie-parser";
-import router from "./routes/user.routes.js";
-import {v2 as cloudinary} from "cloudinary";
 import postRoutes from "./routes/post.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
+import router from "./routes/user.routes.js";
+
+import express from "express";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import {v2 as cloudinary} from "cloudinary";
+
+import connectMongoDB from "./db/connectMongoDB.js";
 
 // load environment variables from.env file
 const app = express();
@@ -28,7 +31,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/users",router);   
 app.use("/api/posts",postRoutes);
-
+app.use("/api/notifications",notificationRoutes);
 console.log(process.env.MONGODB_URI);
 
 // connect to MongoDB and start the server
