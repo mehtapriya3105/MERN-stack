@@ -5,30 +5,77 @@ import { FaRegBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import LoadingSpinner from "./LoadingSpinner.tsx";
 
 interface PostProps {
   post: {
     _id: string;
     text: string;
     img?: string;
-    comments: { _id: string; text: string; user: { profileImg: string | null; fullName: string; username: string } }[];
+    comments: {
+      _id: string;
+      text: string;
+      user: { profileImg: string | null; fullName: string; username: string };
+    }[];
     likes: string[];
-    user: { username: string; fullName: string; profileImg: string | null };
+    user: {
+      _id: string;
+      username: string;
+      fullName: string;
+      profileImg: string | null;
+    };
   };
 }
 
 const Post: React.FC<PostProps> = ({ post }) => {
+
+  const queryclient  = useQueryClient();
+
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+
   const [comment, setComment] = useState<string>("");
+ 
   const postOwner = post.user;
+
   const isLiked = false;
 
-  const isMyPost = true;
+  const isMyPost = post.user._id === authUser.user._id;
 
   const formattedDate = "1h";
 
   const isCommenting = false;
 
-  const handleDeletePost = () => {};
+  const { mutate: deletePost, isPending } = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/posts/delete/${post._id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete post");
+      }
+
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      console.log(data);
+      return data;
+
+    },
+    onSuccess: () => {
+      console.log("Post deleted successfully");
+      toast.success("Post deleted successfully");
+      //invalidate the post query
+      queryclient.invalidateQueries({ queryKey: ["posts"] });
+    },
+
+  });
+  const handleDeletePost = () => {deletePost()};
 
   const handlePostComment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,7 +87,10 @@ const Post: React.FC<PostProps> = ({ post }) => {
     <>
       <div className="flex gap-2 items-start p-4 border-b border-gray-700">
         <div className="avatar">
-          <Link to={`/profile/${postOwner.username}`} className="w-8 rounded-full overflow-hidden">
+          <Link
+            to={`/profile/${postOwner.username}`}
+            className="w-8 rounded-full overflow-hidden"
+          >
             <img src={postOwner.profileImg || "/avatar-placeholder.png"} />
           </Link>
         </div>
@@ -50,13 +100,21 @@ const Post: React.FC<PostProps> = ({ post }) => {
               {postOwner.fullName}
             </Link>
             <span className="text-gray-700 flex gap-1 text-sm">
-              <Link to={`/profile/${postOwner.username}`}>@{postOwner.username}</Link>
+              <Link to={`/profile/${postOwner.username}`}>
+                @{postOwner.username}
+              </Link>
               <span>·</span>
               <span>{formattedDate}</span>
             </span>
             {isMyPost && (
               <span className="flex justify-end flex-1">
-                <FaTrash className="cursor-pointer hover:text-red-500" onClick={handleDeletePost} />
+                {!isPending && (
+                  <FaTrash
+                    className="cursor-pointer hover:text-red-500"
+                    onClick={handleDeletePost}
+                  />
+                )}
+                {isPending && <LoadingSpinner size="sm" />}
               </span>
             )}
           </div>
@@ -74,7 +132,13 @@ const Post: React.FC<PostProps> = ({ post }) => {
             <div className="flex gap-4 items-center w-2/3 justify-between">
               <div
                 className="flex gap-1 items-center cursor-pointer group"
-                onClick={() => (document.getElementById("comments_modal" + post._id) as HTMLDialogElement)?.showModal()}
+                onClick={() =>
+                  (
+                    document.getElementById(
+                      "comments_modal" + post._id
+                    ) as HTMLDialogElement
+                  )?.showModal()
+                }
               >
                 <FaRegComment className="w-4 h-4  text-slate-500 group-hover:text-sky-400" />
                 <span className="text-sm text-slate-500 group-hover:text-sky-400">
@@ -82,7 +146,10 @@ const Post: React.FC<PostProps> = ({ post }) => {
                 </span>
               </div>
               {/* Modal Component from DaisyUI */}
-              <dialog id={`comments_modal${post._id}`} className="modal border-none outline-none">
+              <dialog
+                id={`comments_modal${post._id}`}
+                className="modal border-none outline-none"
+              >
                 <div className="modal-box rounded border border-gray-600">
                   <h3 className="font-bold text-lg mb-4">COMMENTS</h3>
                   <div className="flex flex-col gap-3 max-h-60 overflow-auto">
@@ -96,13 +163,18 @@ const Post: React.FC<PostProps> = ({ post }) => {
                         <div className="avatar">
                           <div className="w-8 rounded-full">
                             <img
-                              src={comment.user.profileImg || "/avatar-placeholder.png"}
+                              src={
+                                comment.user.profileImg ||
+                                "/avatar-placeholder.png"
+                              }
                             />
                           </div>
                         </div>
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1">
-                            <span className="font-bold">{comment.user.fullName}</span>
+                            <span className="font-bold">
+                              {comment.user.fullName}
+                            </span>
                             <span className="text-gray-700 text-sm">
                               @{comment.user.username}
                             </span>
@@ -137,9 +209,14 @@ const Post: React.FC<PostProps> = ({ post }) => {
               </dialog>
               <div className="flex gap-1 items-center group cursor-pointer">
                 <BiRepost className="w-6 h-6  text-slate-500 group-hover:text-green-500" />
-                <span className="text-sm text-slate-500 group-hover:text-green-500">0</span>
+                <span className="text-sm text-slate-500 group-hover:text-green-500">
+                  0
+                </span>
               </div>
-              <div className="flex gap-1 items-center group cursor-pointer" onClick={handleLikePost}>
+              <div
+                className="flex gap-1 items-center group cursor-pointer"
+                onClick={handleLikePost}
+              >
                 {isLiked ? (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500" />
                 ) : (

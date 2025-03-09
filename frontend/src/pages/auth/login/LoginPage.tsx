@@ -5,7 +5,7 @@ import XSvg from "../../../components/svgs/X";
 
 import { MdOutlineMail } from "react-icons/md";
 import { MdPassword } from "react-icons/md";
-import toast from "react-hot-toast";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const LoginPage = () => {
@@ -17,7 +17,7 @@ const LoginPage = () => {
 	const queryClient = useQueryClient(); // react hook to QueryClient instance
 	console.log(queryClient);
 	// handle form submission and set form data
-	const {mutate:login, isPending, isError , error } = useMutation({
+	const {mutate:login, isError , error } = useMutation({
 		mutationFn: async (formData) => {
 			
 			const res = await fetch("/api/auth/login", {
