@@ -7,13 +7,13 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',// this willl avoid the whole path to be prefixed with '/api'
+        target: 'http://localhost:5001',
         changeOrigin: true,
-        
-      } 
-  }
-},
+      }
+
+    }
+  },
   plugins: [react(),
-    tailwindcss(),
+  tailwindcss(),
   ],
 })

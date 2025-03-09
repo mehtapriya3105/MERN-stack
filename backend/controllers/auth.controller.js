@@ -7,9 +7,10 @@ import { generateTokenAndSetCookie } from "../lib/utils/generateToken.js";
 export const signup = async (req, res) => {
   try {
     const { username, fullname, password, email } = req.body;
-    console.log("Request Body: ", req.body);
-
+   
+    // console.log("Request Body: ", req.body.email , ": ", req.body.username , ": ", req.body.UserName , ": ", req.body.password , ": ", req.body.Email);
     // Check if all fields are provided
+    console.log(username, fullname, password, email);
     if (!username || !fullname || !password || !email) {
       return res.status(400).json({ error: "All fields are required" });
     }
@@ -19,6 +20,7 @@ export const signup = async (req, res) => {
         .status(400)
         .json({ error: "Password must be at least 6 characters long" });
     }
+    console.log("Request Body: ", req.body);
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -74,7 +76,7 @@ export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    console.log("Request Body: ", req.body);
+   
     if (!username || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
@@ -89,6 +91,7 @@ export const login = async (req, res) => {
     if (!isPassswordCorrect) {
       return res.status(401).json({ error: "Invalid username or password" });
     }
+   
     generateTokenAndSetCookie(user._id, res);
     res.json({
       _id: user._id,
@@ -100,6 +103,7 @@ export const login = async (req, res) => {
       profileImg: user.profileImg || "",
       coverImg: user.coverImg || "",
     });
+   console.log(res.json());
   } catch (error) {
     console.error("Error in login function: ", error);
     res.status(500).json({ error: error.message });

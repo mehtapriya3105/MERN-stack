@@ -8,12 +8,12 @@ import { FaUser } from "react-icons/fa";
 import { MdPassword } from "react-icons/md";
 import { MdDriveFileRenameOutline } from "react-icons/md";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Toaster } from "react-hot-toast";
+import toast  from "react-hot-toast";
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
     email: "",
     username: "",
-    fullName: "",
+    fullname: "",
     password: "",
   });
 
@@ -21,29 +21,31 @@ const SignUpPage = () => {
   // useQuery() //fetch data
 
   const { mutate, isError, isPending, error } = useMutation({
-	mutationFn: async (formData: { email: string; username: string; fullName: string; password: string }) => {
-	  try {
-		const res = await fetch("/api/auth/signup", {
-		  method: "POST",
-		  headers: { "Content-Type": "application/json" },
-		  body: JSON.stringify(formData), // Correctly formatted request body
-		});
-		if (!res.ok) {
-		  throw new Error("Network error");
-		}
-		const data = await res.json();
-		if (data.error) {
-		  throw new Error(data.error);
-		}
-		console.log(data);
-		return data;
-	  } catch (error) {
-		console.error(error);
-    	// Toaster("Failed to sign up");
-		throw new Error("Failed to sign up");
-	  }
-	},
+    mutationFn: async (formData) => {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+  
+      const data = await res.json(); // Parse JSON response
+  
+      if (!res.ok) {
+        throw new Error(data.error || "Signup failed");
+      }
+  
+      return data;
+    },
+    onError: (error) => {
+      console.error("Signup Error:", error);
+      toast.error(error.message); // Show toast notification
+    },
+    onSuccess: (data) => {
+      console.log("Signup Successful:", data);
+      toast.success("Account created successfully!"); // Success toast
+    },
   });
+  
   
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -99,9 +101,9 @@ const SignUpPage = () => {
                 type="text"
                 className="grow"
                 placeholder="Full Name"
-                name="fullName"
+                name="fullname"
                 onChange={handleInputChange}
-                value={formData.fullName}
+                value={formData.fullname}
               />
             </label>
           </div>

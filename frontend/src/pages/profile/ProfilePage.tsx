@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeleton/ProfileHeaderSkeleton";
-import EditProfileModal from "./EditProfilemodal.tsx";
+import EditProfileModal from "./EditProfileModal.tsx";
 
 import { POSTS } from "../../utils/db/dummy";
 
@@ -11,6 +11,7 @@ import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
+import { useQuery } from "@tanstack/react-query";
 
 // Define User Type
 interface User {
@@ -26,6 +27,8 @@ interface User {
 }
 
 const ProfilePage = () => {
+
+  const {data : authUser , isPending } = useQuery({queryKey: ["authUser"]});
   const [coverImg, setCoverImg] = useState<string | null>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [feedType, setFeedType] = useState<"posts" | "likes">("posts");
