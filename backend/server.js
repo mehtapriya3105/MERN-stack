@@ -23,7 +23,8 @@ cloudinary.config({
 
 
 //parsers to parse incoming requests
-app.use(express.json());//parse JSON requests
+app.use(express.json({ limit: "5mb" }));//parse JSON requests
+// limit should not be too large since in case of the cyber attacks, it could lead to DOS attacks on the server
 app.use(express.urlencoded({ extended: true }));//parse URL encoded requests
 app.use(cookieParser());
 
