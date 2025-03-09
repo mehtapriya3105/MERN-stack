@@ -5,7 +5,7 @@ import { FaRegBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner.tsx";
 
@@ -30,16 +30,15 @@ interface PostProps {
 }
 
 const Post: React.FC<PostProps> = ({ post }) => {
-
-  const queryclient  = useQueryClient();
+  const queryclient = useQueryClient();
 
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
   const [comment, setComment] = useState<string>("");
- 
+
   const postOwner = post.user;
 
-  const isLiked = false;
+  const isLiked = post.likes.includes(authUser.user._id);
 
   const isMyPost = post.user._id === authUser.user._id;
 
@@ -47,7 +46,7 @@ const Post: React.FC<PostProps> = ({ post }) => {
 
   const isCommenting = false;
 
-  const { mutate: deletePost, isPending } = useMutation({
+  const { mutate: deletePost, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/posts/delete/${post._id}`, {
         method: "DELETE",
@@ -65,7 +64,6 @@ const Post: React.FC<PostProps> = ({ post }) => {
       }
       console.log(data);
       return data;
-
     },
     onSuccess: () => {
       console.log("Post deleted successfully");
@@ -73,15 +71,58 @@ const Post: React.FC<PostProps> = ({ post }) => {
       //invalidate the post query
       queryclient.invalidateQueries({ queryKey: ["posts"] });
     },
-
   });
-  const handleDeletePost = () => {deletePost()};
+  const handleDeletePost = () => {
+    deletePost();
+  };
 
   const handlePostComment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
   };
 
-  const handleLikePost = () => {};
+  const { mutate: likePost, isPending: isLiking } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/like/${post._id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) {
+          throw new Error("Failed to like post");
+        }
+        const data = await res.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        console.log(data);
+        return data;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    onSuccess: (updatedLikes) => {
+      toast.success("Action Performed successfully");
+      //This is not the best user experience - It refeches all post when even 1 is liked
+      // queryclient.invalidateQueries({ queryKey: ["posts"] });
+
+      // Instead we can update the cache directly - update the list for the specific post
+      queryclient.setQueryData(["posts"], (oldData) => {
+        return oldData.map((p: { _id: string; }) => {
+          if (p._id === post._id) {
+            return {...p, likes: updatedLikes };
+          }
+          return p;
+        });
+    })
+    },
+    onError: () => {
+      toast.error("Failed to like post");
+    },
+  });
+  const handleLikePost = () => {
+    if (isLiking) return; // overclicking is prevented
+    likePost();
+  };
 
   return (
     <>
@@ -108,13 +149,13 @@ const Post: React.FC<PostProps> = ({ post }) => {
             </span>
             {isMyPost && (
               <span className="flex justify-end flex-1">
-                {!isPending && (
+                {!isDeleting && (
                   <FaTrash
                     className="cursor-pointer hover:text-red-500"
                     onClick={handleDeletePost}
                   />
                 )}
-                {isPending && <LoadingSpinner size="sm" />}
+                {isDeleting && <LoadingSpinner size="sm" />}
               </span>
             )}
           </div>
@@ -147,7 +188,7 @@ const Post: React.FC<PostProps> = ({ post }) => {
               </div>
               {/* Modal Component from DaisyUI */}
               <dialog
-                id={`comments_modal${post._id}`}
+                id={`comments_modal${post._id}`} // creating unique id for each comment and each post
                 className="modal border-none outline-none"
               >
                 <div className="modal-box rounded border border-gray-600">
@@ -195,11 +236,7 @@ const Post: React.FC<PostProps> = ({ post }) => {
                       onChange={(e) => setComment(e.target.value)}
                     />
                     <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-                      {isCommenting ? (
-                        <span className="loading loading-spinner loading-md"></span>
-                      ) : (
-                        "Post"
-                      )}
+                      {isCommenting ? <LoadingSpinner size="md" /> : "Post"}
                     </button>
                   </form>
                 </div>
@@ -213,24 +250,23 @@ const Post: React.FC<PostProps> = ({ post }) => {
                   0
                 </span>
               </div>
-              <div
-                className="flex gap-1 items-center group cursor-pointer"
-                onClick={handleLikePost}
-              >
-                {isLiked ? (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500" />
-                ) : (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
-                )}
+             <div className='flex gap-1 items-center group cursor-pointer' onClick={handleLikePost}>
+								{isLiking && <LoadingSpinner size='sm' />}
+								{!isLiked && !isLiking && (
+									<FaRegHeart className='w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500' />
+								)}
+								{isLiked && !isLiking && (
+									<FaRegHeart className='w-4 h-4 cursor-pointer text-pink-500 ' />
+								)}
 
-                <span
-                  className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-                    isLiked ? "text-pink-500" : ""
-                  }`}
-                >
-                  {post.likes.length}
-                </span>
-              </div>
+								<span
+									className={`text-sm  group-hover:text-pink-500 ${
+										isLiked ? "text-pink-500" : "text-slate-500"
+									}`}
+								>
+									{post.likes.length}
+								</span>
+							</div>
             </div>
             <div className="flex w-1/3 justify-end gap-2 items-center">
               <FaRegBookmark className="w-4 h-4 text-slate-500 cursor-pointer" />
