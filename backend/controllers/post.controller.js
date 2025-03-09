@@ -179,7 +179,8 @@ export const getAllPosts = async (req, res) => {
     // {}  - object in js
 
     if (posts.length === 0) {
-      return res.status(200).json({ message: "No posts found" });
+      console.log("no posts found");
+      return res.status(200).json([]);
     }
     res.status(200).json(posts);
   } catch (error) {
