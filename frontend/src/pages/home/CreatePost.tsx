@@ -20,7 +20,6 @@ const CreatePost: React.FC = () => {
   const {
     mutate: createPost,
     isError,
-    isLoading,
 	error
   } = useMutation({
     mutationFn: async ({ text, img }) => {
@@ -58,10 +57,10 @@ const CreatePost: React.FC = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (text.trim() || img) {
-		createPost({ text, img });
-	  } else {
-		toast.error("Please add some text or an image to create a post.");
-	  }
+      createPost({ text, img });
+    } else {
+      toast.error("Please add some text or an image to create a post.");
+    }
   };
 
   const handleImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {

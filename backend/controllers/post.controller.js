@@ -276,7 +276,8 @@ export const getUserPosts = async (req, res) => {
         }).sort({ createdAt: -1});
 
         if(userPosts.length === 0){
-            return res.status(200).json({message: "No posts found by this user"});
+          console.log("No posts found for this user");
+            return res.status(200).json(userPosts);
         }
 
         res.status(200).json(userPosts);

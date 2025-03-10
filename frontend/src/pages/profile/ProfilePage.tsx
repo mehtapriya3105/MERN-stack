@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeleton/ProfileHeaderSkeleton";
@@ -28,29 +28,39 @@ interface User {
 
 const ProfilePage = () => {
 
-  const {data : authUser , isPending } = useQuery({queryKey: ["authUser"]});
   const [coverImg, setCoverImg] = useState<string | null>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
-  const [feedType, setFeedType] = useState<"posts" | "likes">("posts");
+  const [feedType, setFeedType] = useState<"posts" | "likes">("likes");
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // Modal visibility state
 
   const coverImgRef = useRef<HTMLInputElement | null>(null);
   const profileImgRef = useRef<HTMLInputElement | null>(null);
 
-  const isLoading = false;
+  const{username} = useParams();
   const isMyProfile = true;
+  
+  const{data : user , isLoading } = useQuery({
+    queryKey: ["user",username],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/users/profile/${username}`);
+        console.log(res)
+        if (!res.ok) {
+          throw new Error("Failed to fetch user data");
+        }
+        const data = await res.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        console.log(data)
+        return data.user;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+  });
 
-  const user: User = {
-    _id: "1",
-    fullName: "John Doe",
-    username: "johndoe",
-    profileImg: "/avatars/boy2.png",
-    coverImg: "/cover.png",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    link: "https://youtube.com/@asaprogrammer_",
-    following: ["1", "2", "3"],
-    followers: ["1", "2", "3"],
-  };
+
 
   const handleImgChange = (e: React.ChangeEvent<HTMLInputElement>, state: "coverImg" | "profileImg") => {
     const file = e.target.files ? e.target.files[0] : null;
@@ -177,11 +187,13 @@ const ProfilePage = () => {
                 </div>
                 <div className="flex gap-2">
                   <div className="flex gap-1 items-center">
-                    <span className="font-bold text-xs">{user?.following.length}</span>
+                    <span className="font-bold text-xs">{user.following.length}</span>
+                    {/* <span className="font-bold text-xs">5</span> */}
                     <span className="text-slate-500 text-xs">Following</span>
                   </div>
                   <div className="flex gap-1 items-center">
-                    <span className="font-bold text-xs">{user?.followers.length}</span>
+                  <span className="font-bold text-xs">{user?.followers.length}</span>
+                  {/* <span className="font-bold text-xs">{5}</span> */}
                     <span className="text-slate-500 text-xs">Followers</span>
                   </div>
                 </div>
@@ -209,7 +221,7 @@ const ProfilePage = () => {
             </>
           )}
 
-          <Posts />
+          <Posts feedType={feedType} username={username} userId={user?._id} />
         </div>
       </div>
     </>
